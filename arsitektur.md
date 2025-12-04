@@ -1,7 +1,5 @@
 ### Arsitektur (diagram)
 
-Jika platform merender Mermaid, diagram di bawah akan tampil. Jika tidak, ada juga fallback ASCII dibawahnya.
-
 ```mermaid
 flowchart LR
   Browser[Browser Client<br/>(HTML + Tailwind + Chart.js)]
