@@ -1,4 +1,6 @@
 # Simple Web Monitoring
+Nama : Wimo Alifansha Wibowo 
+NIM : 241091900441
 
 Deskripsi
 --------
