@@ -46,7 +46,7 @@ Arsitektur (Diagram)
             │  - Broadcasts via Socket.IO  │
             └────────────┬─────────┬───────┘
                          │         │
-          GET /api/*    │         │ emits
+          GET /api/*     │         │ emits
                          │         ▼
                  ┌───────┴────────────┐
                  │  DeviceSimulator    │
