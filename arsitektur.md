@@ -18,4 +18,5 @@ flowchart LR
     Express -->|GET /api/history, /api/devices, /api/logs| History
     Express -->|GET /api/logs| Logs
   end
-'''
+
+```
