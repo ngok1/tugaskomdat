@@ -12,9 +12,9 @@ app.use(express.static('public'));
 
 // initial 3 simulated devices
 const initialDevices = [
-  { id: 'dev-1', name: 'Wimo', ip: '192.168.1.1' },
-  { id: 'dev-2', name: 'Alifansha', ip: '192.168.1.2' },
-  { id: 'dev-3', name: 'Wibowo', ip: '192.168.1.3' }
+  { id: 'dev-1', name: 'Wimo Alifansha Wibowo', ip: '192.168.1.1' },
+  { id: 'dev-2', name: '241091900441', ip: '192.168.1.2' },
+  { id: 'dev-3', name: 'Kelas 03SKMM003', ip: '192.168.1.3' }
 ];
 
 const simulator = new DeviceSimulator(initialDevices);
