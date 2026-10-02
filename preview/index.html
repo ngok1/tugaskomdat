@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Curtain Preview</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    .nav {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .nav button {
+      background: rgba(255,255,255,0.12);
+      border: none;
+      color: white;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .nav button.active {
+      background: white;
+      color: #667eea;
+    }
+
+    .panel {
+      display: none;
+      background: white;
+      color: #222;
+      border-radius: 18px;
+      padding: 30px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+    }
+
+    .panel.active {
+      display: block;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 2rem;
+    }
+
+    .status-box {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .status-main {
+      font-size: 52px;
+      font-weight: bold;
+      padding: 35px 20px;
+      border-radius: 16px;
+      background: #f8d7da;
+      color: #721c24;
+      transition: all 0.3s;
+    }
+
+    .status-main.open {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-main.closed {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .status-main.morning {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .status-main.afternoon {
+      background: #ffebc9;
+      color: #7a4a00;
+    }
+
+    .status-main.evening {
+      background: #dfe3e8;
+      color: #2f3b4a;
+    }
+
+    .status-main.custom {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+
+    .bars {
+      margin-top: 25px;
+      width: 100%;
+      height: 38px;
+      border-radius: 20px;
+      background: #eee;
+      border: 2px solid #667eea;
+      overflow: hidden;
+    }
+
+    .fill {
+      height: 100%;
+      width: 0%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      color: white;
+      font-weight: bold;
+      transition: width 0.3s ease;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    button.action {
+      border: none;
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-open { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .btn-closed { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    .btn-morning { background: linear-gradient(135deg, #ffb347, #ffa500); }
+    .btn-afternoon { background: linear-gradient(135deg, #f9d423, #ff4e50); }
+    .btn-evening { background: linear-gradient(135deg, #485563, #29323c); }
+    .btn-stop { background: linear-gradient(135deg, #4facfe, #00f2fe); color: #111; }
+
+    .custom-zone {
+      margin-top: 22px;
+      background: #f5f5f5;
+      border-radius: 12px;
+      padding: 18px;
+    }
+
+    .slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    input[type=range] {
+      flex: 1;
+    }
+
+    .valueText {
+      min-width: 60px;
+      text-align: center;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .status-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    .status-table th, .status-table td {
+      border-bottom: 1px solid #ddd;
+      padding: 12px;
+      text-align: left;
+    }
+
+    .status-table th {
+      background: #f5f5f5;
+    }
+
+    .on { color: green; font-weight: bold; }
+    .off { color: #888; }
+
+    @media (max-width: 700px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="nav">
+      <button class="active" data-page="dashboard">Dashboard</button>
+      <button data-page="control">Control</button>
+      <button data-page="status">Status</button>
+    </div>
+
+    <section id="dashboard" class="panel active">
+      <h1>Smart Curtain Dashboard</h1>
+
+      <div class="status-box">
+        <div id="modeDisplay" class="status-main closed">CLOSED</div>
+        <div style="margin-top: 18px; font-size: 20px; color: #555;">
+          Position: <strong id="posDisplay">0%</strong>
+        </div>
+
+        <div class="bars">
+          <div id="fillBar" class="fill">0%</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="control" class="panel">
+      <h1>Control Curtain</h1>
+
+      <div class="controls">
+        <button class="action btn-open" onclick="sendCommand('OPEN')">OPEN</button>
+        <button class="action btn-morning" onclick="sendCommand('MORNING')">MORNING</button>
+        <button class="action btn-afternoon" onclick="sendCommand('AFTERNOON')">AFTERNOON</button>
+        <button class="action btn-evening" onclick="sendCommand('EVENING')">EVENING</button>
+        <button class="action btn-closed" onclick="sendCommand('CLOSED')">CLOSED</button>
+        <button class="action btn-stop" onclick="sendCommand('STOP')">STOP</button>
+      </div>
+
+      <div class="custom-zone">
+        <label style="font-weight: bold; display:block; margin-bottom: 10px;">Custom Position</label>
+        <div class="slider-wrap">
+          <input id="customSlider" type="range" min="0" max="100" value="0" oninput="updateSliderValue()" />
+          <span id="customValue" class="valueText">0%</span>
+        </div>
+        <button class="action btn-open" style="margin-top: 14px; width: 100%;" onclick="sendCustom()">APPLY CUSTOM</button>
+      </div>
+    </section>
+
+    <section id="status" class="panel">
+      <h1>Status Curtain</h1>
+      <table class="status-table">
+        <tr>
+          <th>Parameter</th>
+          <th>Value</th>
+        </tr>
+        <tr>
+          <td>Mode</td>
+          <td id="statusMode">CLOSED</td>
+        </tr>
+        <tr>
+          <td>Position</td>
+          <td id="statusPosition">0%</td>
+        </tr>
+        <tr>
+          <td>Target</td>
+          <td id="statusTarget">0%</td>
+        </tr>
+        <tr>
+          <td>Movement</td>
+          <td id="statusMoving">Stopped</td>
+        </tr>
+        <tr>
+          <td>Sensor Open</td>
+          <td id="statusSensorOpen">Not Triggered</td>
+        </tr>
+        <tr>
+          <td>Sensor Closed</td>
+          <td id="statusSensorClosed">Triggered</td>
+        </tr>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "curtain_state_preview_v1";
+    const channel = new BroadcastChannel("curtain_state_preview");
+
+    const defaultState = {
+      mode: "CLOSED",
+      position: 0,
+      target: 0,
+      moving: false,
+      sensor_open: false,
+      sensor_closed: true
+    };
+
+    function loadState() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultState));
+        return JSON.parse(JSON.stringify(defaultState));
+      }
+      try {
+        return JSON.parse(raw);
+      } catch {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultState));
+        return JSON.parse(JSON.stringify(defaultState));
+      }
+    }
+
+    function saveState(state) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      channel.postMessage(state);
+    }
+
+    function getModeClass(mode) {
+      const lower = String(mode).toLowerCase();
+      if (lower === "open") return "open";
+      if (lower === "closed") return "closed";
+      if (lower === "morning") return "morning";
+      if (lower === "afternoon") return "afternoon";
+      if (lower === "evening") return "evening";
+      if (lower === "custom") return "custom";
+      return "closed";
+    }
+
+    function setModeState(nextMode, nextTarget, isMoving = true) {
+      const state = loadState();
+
+      state.mode = nextMode;
+      state.target = nextTarget;
+      state.moving = isMoving;
+
+      if (!isMoving) {
+        state.position = nextTarget;
+      }
+
+      if (state.position >= 95) {
+        state.sensor_open = true;
+        state.sensor_closed = false;
+      } else if (state.position <= 5) {
+        state.sensor_open = false;
+        state.sensor_closed = true;
+      } else {
+        state.sensor_open = false;
+        state.sensor_closed = false;
+      }
+
+      saveState(state);
+      renderAll();
+    }
+
+    function sendCommand(command) {
+      const state = loadState();
+      if (command === "OPEN") {
+        state.mode = "OPEN";
+        state.target = 100;
+        state.moving = true;
+      } else if (command === "CLOSED") {
+        state.mode = "CLOSED";
+        state.target = 0;
+        state.moving = true;
+      } else if (command === "MORNING") {
+        state.mode = "MORNING";
+        state.target = 50;
+        state.moving = true;
+      } else if (command === "AFTERNOON") {
+        state.mode = "AFTERNOON";
+        state.target = 30;
+        state.moving = true;
+      } else if (command === "EVENING") {
+        state.mode = "EVENING";
+        state.target = 10;
+        state.moving = true;
+      } else if (command === "STOP") {
+        state.moving = false;
+        state.position = state.position;
+        state.mode = state.mode;
+      }
+
+      saveState(state);
+      renderAll();
+    }
+
+    function sendCustom() {
+      const value = Number(document.getElementById("customSlider").value);
+      const state = loadState();
+      state.mode = "CUSTOM";
+      state.target = value;
+      state.moving = true;
+      saveState(state);
+      renderAll();
+    }
+
+    function updateSliderValue() {
+      const value = document.getElementById("customSlider").value;
+      document.getElementById("customValue").textContent = value + "%";
+    }
+
+    function renderAll() {
+      const state = loadState();
+
+      const modeDisplay = document.getElementById("modeDisplay");
+      const posDisplay = document.getElementById("posDisplay");
+      const fillBar = document.getElementById("fillBar");
+
+      const currentPos = state.moving
+        ? Math.min(state.position + 5, state.target)
+        : state.position;
+
+      // Simulasi pergerakan
+      if (state.moving) {
+        const diff = state.target - state.position;
+        if (Math.abs(diff) > 0) {
+          const step = diff * 0.12;
+          state.position += step;
+          if (Math.abs(state.target - state.position) < 1) {
+            state.position = state.target;
+            state.moving = false;
+          }
+          saveState(state);
+        }
+      }
+
+      const finalState = loadState();
+      const pos = Math.round(finalState.position);
+
+      modeDisplay.textContent = finalState.mode.toUpperCase();
+      modeDisplay.className = "status-main " + getModeClass(finalState.mode);
+
+      posDisplay.textContent = pos + "%";
+      fillBar.style.width = pos + "%";
+      fillBar.textContent = pos + "%";
+
+      document.getElementById("statusMode").textContent = finalState.mode.toUpperCase();
+      document.getElementById("statusPosition").textContent = pos + "%";
+      document.getElementById("statusTarget").textContent = finalState.target + "%";
+      document.getElementById("statusMoving").textContent = finalState.moving ? "Moving" : "Stopped";
+      document.getElementById("statusMoving").className = finalState.moving ? "on" : "off";
+
+      const openEl = document.getElementById("statusSensorOpen");
+      openEl.textContent = finalState.sensor_open ? "Triggered" : "Not Triggered";
+      openEl.className = finalState.sensor_open ? "on" : "off";
+
+      const closedEl = document.getElementById("statusSensorClosed");
+      closedEl.textContent = finalState.sensor_closed ? "Triggered" : "Not Triggered";
+      closedEl.className = finalState.sensor_closed ? "on" : "off";
+    }
+
+    document.querySelectorAll(".nav button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".nav button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        document.querySelectorAll(".panel").forEach(panel => {
+          panel.classList.remove("active");
+        });
+
+        const page = btn.dataset.page;
+        document.getElementById(page).classList.add("active");
+      });
+    });
+
+    channel.onmessage = (event) => {
+      const state = event.data;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderAll();
+    };
+
+    updateSliderValue();
+    renderAll();
+    setInterval(renderAll, 200);
+  </script>
+</body>
+</html>
