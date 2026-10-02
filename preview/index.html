@@ -3,472 +3,948 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart Curtain Preview</title>
+  <title>Smart Curtain Control</title>
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea, #764ba2);
-      color: #fff;
-      min-height: 100vh;
-      padding: 20px;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      color: #222;
+    }
+
+    .navbar {
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .navbar-title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .navbar-right {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .connection-status.connected {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .connection-status.disconnected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .connected .status-dot {
+      background: #28a745;
+    }
+
+    .disconnected .status-dot {
+      background: #dc3545;
+    }
+
+    .settings-btn {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .settings-btn:hover {
+      background: #5568d3;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      max-width: 400px;
+      width: 90%;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 18px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      color: #333;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .modal-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .modal-buttons button {
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .btn-save {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-cancel {
+      background: #e0e0e0;
+      color: #333;
     }
 
     .container {
       max-width: 1200px;
       margin: auto;
+      padding: 20px;
     }
 
-    .nav {
+    .nav-tabs {
       display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
+      gap: 10px;
+      margin-bottom: 25px;
+      border-bottom: 2px solid #e0e0e0;
     }
 
-    .nav button {
-      background: rgba(255,255,255,0.12);
+    .nav-tabs button {
+      background: none;
       border: none;
-      color: white;
-      padding: 12px 18px;
-      border-radius: 10px;
-      font-weight: bold;
+      padding: 12px 20px;
       cursor: pointer;
+      font-weight: 600;
+      color: #999;
+      border-bottom: 3px solid transparent;
+      font-size: 15px;
     }
 
-    .nav button.active {
-      background: white;
+    .nav-tabs button.active {
       color: #667eea;
+      border-bottom-color: #667eea;
     }
 
     .panel {
       display: none;
-      background: white;
-      color: #222;
-      border-radius: 18px;
-      padding: 30px;
-      box-shadow: 0 20px 50px rgba(0,0,0,0.25);
     }
 
     .panel.active {
       display: block;
     }
 
-    h1 {
-      margin-top: 0;
-      font-size: 2rem;
-    }
-
-    .status-box {
-      text-align: center;
-      margin-top: 20px;
-    }
-
-    .status-main {
-      font-size: 52px;
-      font-weight: bold;
-      padding: 35px 20px;
-      border-radius: 16px;
-      background: #f8d7da;
-      color: #721c24;
-      transition: all 0.3s;
-    }
-
-    .status-main.open {
-      background: #d4edda;
-      color: #155724;
-    }
-
-    .status-main.closed {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .status-main.morning {
-      background: #fff3cd;
-      color: #856404;
-    }
-
-    .status-main.afternoon {
-      background: #ffebc9;
-      color: #7a4a00;
-    }
-
-    .status-main.evening {
-      background: #dfe3e8;
-      color: #2f3b4a;
-    }
-
-    .status-main.custom {
-      background: #d1ecf1;
-      color: #0c5460;
-    }
-
-    .bars {
-      margin-top: 25px;
-      width: 100%;
-      height: 38px;
-      border-radius: 20px;
-      background: #eee;
-      border: 2px solid #667eea;
-      overflow: hidden;
-    }
-
-    .fill {
-      height: 100%;
-      width: 0%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(90deg, #667eea, #764ba2);
-      color: white;
-      font-weight: bold;
-      transition: width 0.3s ease;
-    }
-
-    .controls {
+    /* DASHBOARD */
+    .dashboard-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
     }
 
-    button.action {
-      border: none;
-      border-radius: 10px;
-      padding: 14px 16px;
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .card-value {
+      font-size: 28px;
       font-weight: bold;
-      color: white;
-      cursor: pointer;
+      color: #667eea;
+    }
+
+    .time-display {
+      font-size: 48px;
+      font-weight: bold;
+      text-align: center;
+      color: #667eea;
+      margin-bottom: 8px;
+    }
+
+    .date-display {
+      text-align: center;
+      color: #999;
       font-size: 14px;
     }
 
-    .btn-open { background: linear-gradient(135deg, #667eea, #764ba2); }
-    .btn-closed { background: linear-gradient(135deg, #f093fb, #f5576c); }
-    .btn-morning { background: linear-gradient(135deg, #ffb347, #ffa500); }
-    .btn-afternoon { background: linear-gradient(135deg, #f9d423, #ff4e50); }
-    .btn-evening { background: linear-gradient(135deg, #485563, #29323c); }
-    .btn-stop { background: linear-gradient(135deg, #4facfe, #00f2fe); color: #111; }
+    .chart-container {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 25px;
+    }
 
-    .custom-zone {
-      margin-top: 22px;
-      background: #f5f5f5;
+    .chart-title {
+      font-weight: 600;
+      margin-bottom: 15px;
+      font-size: 15px;
+    }
+
+    .chart-bars {
+      display: flex;
+      gap: 15px;
+      align-items: flex-end;
+      height: 200px;
+      margin-bottom: 15px;
+    }
+
+    .chart-bar-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-bar {
+      width: 100%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 8px 8px 0 0;
+      min-height: 20px;
+      transition: all 0.3s;
+    }
+
+    .chart-label {
+      font-size: 12px;
+      color: #999;
+      text-align: center;
+    }
+
+    .curtain-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+
+    .curtain-item {
+      background: white;
       border-radius: 12px;
       padding: 18px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .curtain-name {
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .curtain-status {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 12px;
+    }
+
+    .curtain-bar {
+      height: 8px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .curtain-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .curtain-position {
+      font-size: 11px;
+      color: #666;
+      text-align: center;
+    }
+
+    /* CONTROL */
+    .room-selector {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+
+    .room-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .room-btn {
+      padding: 14px;
+      border: 2px solid #e0e0e0;
+      background: white;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+      font-size: 14px;
+    }
+
+    .room-btn.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+
+    .room-btn:hover {
+      border-color: #667eea;
+    }
+
+    .control-panel {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .control-group {
+      margin-bottom: 20px;
+    }
+
+    .control-group-title {
+      font-weight: 600;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: #333;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .control-btn {
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      color: white;
+      font-size: 13px;
+      transition: all 0.3s;
+    }
+
+    .control-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .btn-open { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .btn-morning { background: linear-gradient(135deg, #ffa500, #ff8c00); }
+    .btn-afternoon { background: linear-gradient(135deg, #ffb347, #ffa500); }
+    .btn-evening { background: linear-gradient(135deg, #696969, #2f4f4f); }
+    .btn-closed { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    .btn-stop { background: linear-gradient(135deg, #4facfe, #00f2fe); color: #111; }
+
+    .slider-section {
+      margin-top: 20px;
+    }
+
+    .slider-label {
+      font-weight: 600;
+      margin-bottom: 10px;
+      font-size: 14px;
     }
 
     .slider-wrap {
       display: flex;
-      align-items: center;
       gap: 12px;
+      align-items: center;
+      margin-bottom: 10px;
     }
 
-    input[type=range] {
+    input[type="range"] {
       flex: 1;
     }
 
-    .valueText {
-      min-width: 60px;
+    .slider-value {
+      min-width: 50px;
       text-align: center;
       font-weight: bold;
       color: #667eea;
     }
 
-    .status-table {
+    .slider-apply {
+      width: 100%;
+      padding: 12px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* STATUS */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+    }
+
+    .curtain-preview {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    .curtain-preview-icon {
+      font-size: 80px;
+      margin: 20px 0;
+      transition: all 0.3s;
+    }
+
+    .curtain-preview-name {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    .curtain-preview-status {
+      display: inline-block;
+      background: #f0f0f0;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 15px;
+    }
+
+    .curtain-preview-bar {
+      height: 12px;
+      background: #f0f0f0;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .curtain-preview-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .curtain-preview-position {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .table-container {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      overflow-x: auto;
+    }
+
+    table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 20px;
     }
 
-    .status-table th, .status-table td {
-      border-bottom: 1px solid #ddd;
+    table th {
+      background: #f5f5f5;
       padding: 12px;
       text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      border-bottom: 2px solid #e0e0e0;
     }
 
-    .status-table th {
-      background: #f5f5f5;
+    table td {
+      padding: 12px;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 13px;
     }
 
-    .on { color: green; font-weight: bold; }
-    .off { color: #888; }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+    }
 
-    @media (max-width: 700px) {
-      .controls {
-        grid-template-columns: 1fr;
-      }
+    .badge-on {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .badge-off {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .badge-moving {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    @media (max-width: 768px) {
+      .button-grid { grid-template-columns: 1fr; }
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .nav-tabs { flex-wrap: wrap; }
+      .curtain-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
+  <!-- NAVBAR -->
+  <div class="navbar">
+    <div class="navbar-title">🪟 Smart Curtain</div>
+    <div class="navbar-right">
+      <div id="connectionStatus" class="connection-status disconnected">
+        <span class="status-dot"></span>
+        <span>Disconnected</span>
+      </div>
+      <button class="settings-btn" onclick="openSettings()">⚙️ Settings</button>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">Connection Settings</div>
+      <div class="form-group">
+        <label>Server/ESP32 IP Address</label>
+        <input id="serverIP" type="text" placeholder="192.168.1.150 atau localhost:8080" />
+      </div>
+      <div class="modal-buttons">
+        <button class="btn-save" onclick="saveSettings()">Save & Connect</button>
+        <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER -->
   <div class="container">
-    <div class="nav">
-      <button class="active" data-page="dashboard">Dashboard</button>
-      <button data-page="control">Control</button>
-      <button data-page="status">Status</button>
+    <!-- NAV TABS -->
+    <div class="nav-tabs">
+      <button class="active" data-page="dashboard" onclick="switchPage('dashboard')">📊 Dashboard</button>
+      <button data-page="control" onclick="switchPage('control')">🎮 Control</button>
+      <button data-page="status" onclick="switchPage('status')">📋 Status</button>
     </div>
 
-    <section id="dashboard" class="panel active">
-      <h1>Smart Curtain Dashboard</h1>
-
-      <div class="status-box">
-        <div id="modeDisplay" class="status-main closed">CLOSED</div>
-        <div style="margin-top: 18px; font-size: 20px; color: #555;">
-          Position: <strong id="posDisplay">0%</strong>
+    <!-- DASHBOARD PAGE -->
+    <div id="dashboard" class="panel active">
+      <div class="dashboard-grid">
+        <div class="card">
+          <div class="card-title">Current Time</div>
+          <div class="time-display" id="timeDisplay">00:00</div>
+          <div class="date-display" id="dateDisplay">Loading...</div>
         </div>
 
-        <div class="bars">
-          <div id="fillBar" class="fill">0%</div>
+        <div class="card">
+          <div class="card-title">Total Curtains</div>
+          <div class="card-value" id="totalCurtains">5</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Active Movement</div>
+          <div class="card-value" id="activeCurtains">0</div>
         </div>
       </div>
-    </section>
 
-    <section id="control" class="panel">
-      <h1>Control Curtain</h1>
-
-      <div class="controls">
-        <button class="action btn-open" onclick="sendCommand('OPEN')">OPEN</button>
-        <button class="action btn-morning" onclick="sendCommand('MORNING')">MORNING</button>
-        <button class="action btn-afternoon" onclick="sendCommand('AFTERNOON')">AFTERNOON</button>
-        <button class="action btn-evening" onclick="sendCommand('EVENING')">EVENING</button>
-        <button class="action btn-closed" onclick="sendCommand('CLOSED')">CLOSED</button>
-        <button class="action btn-stop" onclick="sendCommand('STOP')">STOP</button>
-      </div>
-
-      <div class="custom-zone">
-        <label style="font-weight: bold; display:block; margin-bottom: 10px;">Custom Position</label>
-        <div class="slider-wrap">
-          <input id="customSlider" type="range" min="0" max="100" value="0" oninput="updateSliderValue()" />
-          <span id="customValue" class="valueText">0%</span>
+      <div class="chart-container">
+        <div class="chart-title">Curtain Positions</div>
+        <div class="chart-bars" id="chartBars">
+          <!-- Generated by JS -->
         </div>
-        <button class="action btn-open" style="margin-top: 14px; width: 100%;" onclick="sendCustom()">APPLY CUSTOM</button>
       </div>
-    </section>
 
-    <section id="status" class="panel">
-      <h1>Status Curtain</h1>
-      <table class="status-table">
-        <tr>
-          <th>Parameter</th>
-          <th>Value</th>
-        </tr>
-        <tr>
-          <td>Mode</td>
-          <td id="statusMode">CLOSED</td>
-        </tr>
-        <tr>
-          <td>Position</td>
-          <td id="statusPosition">0%</td>
-        </tr>
-        <tr>
-          <td>Target</td>
-          <td id="statusTarget">0%</td>
-        </tr>
-        <tr>
-          <td>Movement</td>
-          <td id="statusMoving">Stopped</td>
-        </tr>
-        <tr>
-          <td>Sensor Open</td>
-          <td id="statusSensorOpen">Not Triggered</td>
-        </tr>
-        <tr>
-          <td>Sensor Closed</td>
-          <td id="statusSensorClosed">Triggered</td>
-        </tr>
-      </table>
-    </section>
+      <div class="chart-container">
+        <div class="chart-title">Curtains Status</div>
+        <div class="curtain-grid" id="curtainStatusGrid">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTROL PAGE -->
+    <div id="control" class="panel">
+      <div class="room-selector">
+        <div style="font-weight: 600; margin-bottom: 12px;">Select Room/Area</div>
+        <div class="room-grid" id="roomGrid">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+
+      <div class="control-panel">
+        <div class="control-group">
+          <div class="control-group-title">Preset Modes</div>
+          <div class="button-grid">
+            <button class="control-btn btn-open" onclick="sendCmd('OPEN')">🟦 OPEN</button>
+            <button class="control-btn btn-morning" onclick="sendCmd('MORNING')">☀️ MORNING</button>
+            <button class="control-btn btn-afternoon" onclick="sendCmd('AFTERNOON')">🌤️ AFTERNOON</button>
+            <button class="control-btn btn-evening" onclick="sendCmd('EVENING')">🌙 EVENING</button>
+            <button class="control-btn btn-closed" onclick="sendCmd('CLOSED')">🪟 CLOSED</button>
+            <button class="control-btn btn-stop" onclick="sendCmd('STOP')">⏹️ STOP</button>
+          </div>
+        </div>
+
+        <div class="control-group slider-section">
+          <div class="slider-label">Custom Position</div>
+          <div class="slider-wrap">
+            <input id="customSlider" type="range" min="0" max="100" value="0" oninput="updateSlider()" />
+            <span class="slider-value" id="sliderValue">0%</span>
+          </div>
+          <button class="slider-apply" onclick="applyCustom()">Apply Custom Position</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS PAGE -->
+    <div id="status" class="panel">
+      <div class="status-grid" id="statusGrid">
+        <!-- Generated by JS -->
+      </div>
+
+      <div style="margin-top: 25px;">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Curtain</th>
+                <th>Mode</th>
+                <th>Position</th>
+                <th>Movement</th>
+              </tr>
+            </thead>
+            <tbody id="statusTable">
+              <!-- Generated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
-    const STORAGE_KEY = "curtain_state_preview_v1";
-    const channel = new BroadcastChannel("curtain_state_preview");
+    // DATA
+    const curtains = [
+      { id: 1, name: "Living Room", room: "Living Room", position: 0, target: 0, moving: false, mode: "CLOSED", sensors: { open: false, closed: true } },
+      { id: 2, name: "Bedroom", room: "Bedroom", position: 50, target: 50, moving: false, mode: "MORNING", sensors: { open: false, closed: false } },
+      { id: 3, name: "Kitchen", room: "Kitchen", position: 30, target: 30, moving: false, mode: "AFTERNOON", sensors: { open: false, closed: false } },
+      { id: 4, name: "Dining", room: "Living Room", position: 100, target: 100, moving: false, mode: "OPEN", sensors: { open: true, closed: false } },
+      { id: 5, name: "Study", room: "Study", position: 10, target: 10, moving: false, mode: "EVENING", sensors: { open: false, closed: false } }
+    ];
 
-    const defaultState = {
-      mode: "CLOSED",
-      position: 0,
-      target: 0,
-      moving: false,
-      sensor_open: false,
-      sensor_closed: true
-    };
+    const rooms = ["Living Room", "Bedroom", "Kitchen", "Study"];
+    let selectedRoom = "Living Room";
+    let serverIP = localStorage.getItem("serverIP") || "";
+    let isConnected = false;
 
-    function loadState() {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultState));
-        return JSON.parse(JSON.stringify(defaultState));
-      }
-      try {
-        return JSON.parse(raw);
-      } catch {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultState));
-        return JSON.parse(JSON.stringify(defaultState));
-      }
+    // UI UPDATE
+    function updateTime() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      const dateStr = now.toLocaleDateString('en-US', options);
+
+      document.getElementById('timeDisplay').textContent = `${hours}:${minutes}`;
+      document.getElementById('dateDisplay').textContent = dateStr;
     }
 
-    function saveState(state) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      channel.postMessage(state);
+    function updateDashboard() {
+      const activeCurtains = curtains.filter(c => c.moving).length;
+      document.getElementById('activeCurtains').textContent = activeCurtains;
+
+      // Chart
+      const chart = document.getElementById('chartBars');
+      chart.innerHTML = curtains.map(c => `
+        <div class="chart-bar-item">
+          <div class="chart-bar" style="height: ${Math.max(c.position * 2, 20)}px;"></div>
+          <div class="chart-label">${c.position}%</div>
+        </div>
+      `).join('');
+
+      // Curtain Status
+      const grid = document.getElementById('curtainStatusGrid');
+      grid.innerHTML = curtains.map(c => `
+        <div class="curtain-item">
+          <div class="curtain-name">${c.name}</div>
+          <div class="curtain-status">${c.mode}</div>
+          <div class="curtain-bar">
+            <div class="curtain-fill" style="width: ${c.position}%"></div>
+          </div>
+          <div class="curtain-position">${c.position}%</div>
+        </div>
+      `).join('');
     }
 
-    function getModeClass(mode) {
-      const lower = String(mode).toLowerCase();
-      if (lower === "open") return "open";
-      if (lower === "closed") return "closed";
-      if (lower === "morning") return "morning";
-      if (lower === "afternoon") return "afternoon";
-      if (lower === "evening") return "evening";
-      if (lower === "custom") return "custom";
-      return "closed";
+    function updateControl() {
+      const grid = document.getElementById('roomGrid');
+      grid.innerHTML = rooms.map(room => `
+        <button class="room-btn ${room === selectedRoom ? 'active' : ''}" onclick="selectRoom('${room}')">${room}</button>
+      `).join('');
     }
 
-    function setModeState(nextMode, nextTarget, isMoving = true) {
-      const state = loadState();
+    function updateStatus() {
+      const statusGrid = document.getElementById('statusGrid');
+      statusGrid.innerHTML = curtains.map(c => {
+        const icon = c.position > 70 ? '🟦' : (c.position > 40 ? '🟫' : '🪟');
+        return `
+          <div class="curtain-preview">
+            <div class="curtain-preview-icon">${icon}</div>
+            <div class="curtain-preview-name">${c.name}</div>
+            <div class="curtain-preview-status">${c.mode}</div>
+            <div class="curtain-preview-bar">
+              <div class="curtain-preview-fill" style="width: ${c.position}%"></div>
+            </div>
+            <div class="curtain-preview-position">${c.position}%</div>
+          </div>
+        `;
+      }).join('');
 
-      state.mode = nextMode;
-      state.target = nextTarget;
-      state.moving = isMoving;
-
-      if (!isMoving) {
-        state.position = nextTarget;
-      }
-
-      if (state.position >= 95) {
-        state.sensor_open = true;
-        state.sensor_closed = false;
-      } else if (state.position <= 5) {
-        state.sensor_open = false;
-        state.sensor_closed = true;
-      } else {
-        state.sensor_open = false;
-        state.sensor_closed = false;
-      }
-
-      saveState(state);
-      renderAll();
+      const table = document.getElementById('statusTable');
+      table.innerHTML = curtains.map(c => `
+        <tr>
+          <td>${c.name}</td>
+          <td>${c.mode}</td>
+          <td>${c.position}%</td>
+          <td><span class="status-badge ${c.moving ? 'badge-moving' : 'badge-off'}">${c.moving ? 'Moving' : 'Stopped'}</span></td>
+        </tr>
+      `).join('');
     }
 
-    function sendCommand(command) {
-      const state = loadState();
-      if (command === "OPEN") {
-        state.mode = "OPEN";
-        state.target = 100;
-        state.moving = true;
-      } else if (command === "CLOSED") {
-        state.mode = "CLOSED";
-        state.target = 0;
-        state.moving = true;
-      } else if (command === "MORNING") {
-        state.mode = "MORNING";
-        state.target = 50;
-        state.moving = true;
-      } else if (command === "AFTERNOON") {
-        state.mode = "AFTERNOON";
-        state.target = 30;
-        state.moving = true;
-      } else if (command === "EVENING") {
-        state.mode = "EVENING";
-        state.target = 10;
-        state.moving = true;
-      } else if (command === "STOP") {
-        state.moving = false;
-        state.position = state.position;
-        state.mode = state.mode;
-      }
+    function switchPage(page) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(page).classList.add('active');
 
-      saveState(state);
-      renderAll();
+      document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+
+      if (page === 'control') updateControl();
+      if (page === 'status') updateStatus();
+      if (page === 'dashboard') updateDashboard();
     }
 
-    function sendCustom() {
-      const value = Number(document.getElementById("customSlider").value);
-      const state = loadState();
-      state.mode = "CUSTOM";
-      state.target = value;
-      state.moving = true;
-      saveState(state);
-      renderAll();
+    function selectRoom(room) {
+      selectedRoom = room;
+      updateControl();
     }
 
-    function updateSliderValue() {
-      const value = document.getElementById("customSlider").value;
-      document.getElementById("customValue").textContent = value + "%";
-    }
+    function sendCmd(cmd) {
+      const curtainIds = curtains
+        .filter(c => c.room === selectedRoom)
+        .map(c => c.id);
 
-    function renderAll() {
-      const state = loadState();
+      curtainIds.forEach(id => {
+        const curtain = curtains.find(c => c.id === id);
+        if (!curtain) return;
 
-      const modeDisplay = document.getElementById("modeDisplay");
-      const posDisplay = document.getElementById("posDisplay");
-      const fillBar = document.getElementById("fillBar");
-
-      const currentPos = state.moving
-        ? Math.min(state.position + 5, state.target)
-        : state.position;
-
-      // Simulasi pergerakan
-      if (state.moving) {
-        const diff = state.target - state.position;
-        if (Math.abs(diff) > 0) {
-          const step = diff * 0.12;
-          state.position += step;
-          if (Math.abs(state.target - state.position) < 1) {
-            state.position = state.target;
-            state.moving = false;
-          }
-          saveState(state);
+        if (cmd === 'OPEN') {
+          curtain.mode = 'OPEN';
+          curtain.target = 100;
+          curtain.moving = true;
+        } else if (cmd === 'CLOSED') {
+          curtain.mode = 'CLOSED';
+          curtain.target = 0;
+          curtain.moving = true;
+        } else if (cmd === 'MORNING') {
+          curtain.mode = 'MORNING';
+          curtain.target = 50;
+          curtain.moving = true;
+        } else if (cmd === 'AFTERNOON') {
+          curtain.mode = 'AFTERNOON';
+          curtain.target = 30;
+          curtain.moving = true;
+        } else if (cmd === 'EVENING') {
+          curtain.mode = 'EVENING';
+          curtain.target = 10;
+          curtain.moving = true;
+        } else if (cmd === 'STOP') {
+          curtain.moving = false;
+          curtain.position = curtain.target;
         }
-      }
+      });
 
-      const finalState = loadState();
-      const pos = Math.round(finalState.position);
-
-      modeDisplay.textContent = finalState.mode.toUpperCase();
-      modeDisplay.className = "status-main " + getModeClass(finalState.mode);
-
-      posDisplay.textContent = pos + "%";
-      fillBar.style.width = pos + "%";
-      fillBar.textContent = pos + "%";
-
-      document.getElementById("statusMode").textContent = finalState.mode.toUpperCase();
-      document.getElementById("statusPosition").textContent = pos + "%";
-      document.getElementById("statusTarget").textContent = finalState.target + "%";
-      document.getElementById("statusMoving").textContent = finalState.moving ? "Moving" : "Stopped";
-      document.getElementById("statusMoving").className = finalState.moving ? "on" : "off";
-
-      const openEl = document.getElementById("statusSensorOpen");
-      openEl.textContent = finalState.sensor_open ? "Triggered" : "Not Triggered";
-      openEl.className = finalState.sensor_open ? "on" : "off";
-
-      const closedEl = document.getElementById("statusSensorClosed");
-      closedEl.textContent = finalState.sensor_closed ? "Triggered" : "Not Triggered";
-      closedEl.className = finalState.sensor_closed ? "on" : "off";
+      updateAll();
     }
 
-    document.querySelectorAll(".nav button").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".nav button").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
+    function updateSlider() {
+      const val = document.getElementById('customSlider').value;
+      document.getElementById('sliderValue').textContent = val + '%';
+    }
 
-        document.querySelectorAll(".panel").forEach(panel => {
-          panel.classList.remove("active");
-        });
+    function applyCustom() {
+      const pos = Number(document.getElementById('customSlider').value);
+      const curtainIds = curtains
+        .filter(c => c.room === selectedRoom)
+        .map(c => c.id);
 
-        const page = btn.dataset.page;
-        document.getElementById(page).classList.add("active");
+      curtainIds.forEach(id => {
+        const curtain = curtains.find(c => c.id === id);
+        if (curtain) {
+          curtain.mode = 'CUSTOM';
+          curtain.target = pos;
+          curtain.moving = true;
+        }
       });
-    });
 
-    channel.onmessage = (event) => {
-      const state = event.data;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      renderAll();
-    };
+      updateAll();
+    }
 
-    updateSliderValue();
-    renderAll();
-    setInterval(renderAll, 200);
+    function updateMovement() {
+      curtains.forEach(c => {
+        if (c.moving && c.position !== c.target) {
+          const diff = c.target - c.position;
+          c.position += diff * 0.05;
+          if (Math.abs(c.position - c.target) < 1) {
+            c.position = c.target;
+            c.moving = false;
+          }
+        }
+        c.sensors.open = c.position >= 95;
+        c.sensors.closed = c.position <= 5;
+      });
+    }
+
+    function updateConnectionStatus() {
+      const el = document.getElementById('connectionStatus');
+      if (isConnected) {
+        el.classList.remove('disconnected');
+        el.classList.add('connected');
+        el.innerHTML = '<span class="status-dot"></span><span>Connected</span>';
+      } else {
+        el.classList.remove('connected');
+        el.classList.add('disconnected');
+        el.innerHTML = '<span class="status-dot"></span><span>Disconnected</span>';
+      }
+    }
+
+    function openSettings() {
+      document.getElementById('serverIP').value = serverIP;
+      document.getElementById('settingsModal').classList.add('show');
+    }
+
+    function closeSettings() {
+      document.getElementById('settingsModal').classList.remove('show');
+    }
+
+    function saveSettings() {
+      const ip = document.getElementById('serverIP').value.trim();
+      if (!ip) {
+        alert('Please enter IP address');
+        return;
+      }
+
+      serverIP = ip;
+      localStorage.setItem('serverIP', serverIP);
+
+      // Simulasi koneksi
+      isConnected = true;
+      updateConnectionStatus();
+
+      closeSettings();
+      alert('Connected to: ' + serverIP);
+    }
+
+    function updateAll() {
+      updateDashboard();
+      updateStatus();
+    }
+
+    // INIT
+    updateTime();
+    setInterval(updateTime, 1000);
+    setInterval(() => {
+      updateMovement();
+      updateDashboard();
+    }, 100);
+
+    updateConnectionStatus();
   </script>
 </body>
 </html>
