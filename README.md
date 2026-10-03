@@ -1,12 +1,5 @@
 # Smart Curtain Control
 
-Smart Curtain Control adalah sistem kontrol tirai otomatis berbasis ESP32 yang dapat diakses melalui web dashboard. Sistem ini mendukung:
-- Dashboard tampilan posisi tiap ruangan
-- Control mode: OPEN, CLOSED, MORNING, AFTERNOON, EVENING, CUSTOM
-- Status tiap room/ruangan
-- Koneksi ke broker MQTT
-- API HTTP untuk frontend agar dapat berkomunikasi dengan ESP32
-
 Struktur project:
 - index.html
 - dashboard.html
