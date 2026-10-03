@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Control Curtain</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      color: #222;
+    }
+
+    .navbar {
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .nav-right {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 20px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .connection-status.connected {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .connection-status.disconnected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .connected .status-dot { background: #28a745; }
+    .disconnected .status-dot { background: #dc3545; }
+
+    .settings-btn {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      background: #667eea;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 25px auto;
+      padding: 0 20px 40px;
+    }
+
+    .top-nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 25px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .top-nav a {
+      text-decoration: none;
+      padding: 12px 18px;
+      color: #999;
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .top-nav a.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .panel {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 20px;
+    }
+
+    .section-title {
+      font-weight: 600;
+      font-size: 15px;
+      margin-bottom: 12px;
+    }
+
+    .room-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .room-btn {
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      background: white;
+      padding: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .room-btn.active {
+      background: #667eea;
+      border-color: #667eea;
+      color: white;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .control-btn {
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .control-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.15);
+    }
+
+    .btn-open { background: linear-gradient(135deg, #667eea, #764ba2); }
+    .btn-morning { background: linear-gradient(135deg, #ffa500, #ff8c00); }
+    .btn-afternoon { background: linear-gradient(135deg, #ffb347, #ffa500); }
+    .btn-evening { background: linear-gradient(135deg, #696969, #2f4f4f); }
+    .btn-closed { background: linear-gradient(135deg, #f093fb, #f5576c); }
+    .btn-stop { background: linear-gradient(135deg, #4facfe, #00f2fe); color: #111; }
+
+    .custom-zone {
+      margin-top: 26px;
+      background: #f5f5f5;
+      border-radius: 10px;
+      padding: 18px;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    input[type="range"] {
+      flex: 1;
+    }
+
+    .slider-val {
+      min-width: 50px;
+      font-weight: bold;
+      color: #667eea;
+      text-align: center;
+    }
+
+    .custom-apply {
+      width: 100%;
+      margin-top: 12px;
+      border: none;
+      border-radius: 8px;
+      background: #667eea;
+      color: white;
+      padding: 12px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .status-box {
+      margin-top: 20px;
+      background: #f5f5f5;
+      border-radius: 10px;
+      padding: 14px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      width: 90%;
+      max-width: 420px;
+      border-radius: 12px;
+      padding: 22px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 18px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .modal-actions button {
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .btn-save {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-cancel {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    @media (max-width: 700px) {
+      .button-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <div class="title">🪟 Smart Curtain</div>
+    <div class="nav-right">
+      <div id="connectionStatus" class="connection-status disconnected">
+        <span class="status-dot"></span>
+        <span>Disconnected</span>
+      </div>
+      <button class="settings-btn" onclick="openSettings()">⚙️ Settings</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="top-nav">
+      <a href="dashboard.html">📊 Dashboard</a>
+      <a href="control.html" class="active">🎮 Control</a>
+      <a href="status.html">📋 Status</a>
+    </div>
+
+    <div class="panel">
+      <div class="section-title">Select Room / Area</div>
+      <div class="room-grid" id="roomGrid"></div>
+
+      <div class="section-title" style="margin-top: 12px;">Preset Modes</div>
+      <div class="button-grid">
+        <button class="control-btn btn-open" onclick="sendCommand('OPEN')">🟦 OPEN</button>
+        <button class="control-btn btn-morning" onclick="sendCommand('MORNING')">☀️ MORNING</button>
+        <button class="control-btn btn-afternoon" onclick="sendCommand('AFTERNOON')">🌤️ AFTERNOON</button>
+        <button class="control-btn btn-evening" onclick="sendCommand('EVENING')">🌙 EVENING</button>
+        <button class="control-btn btn-closed" onclick="sendCommand('CLOSED')">🪟 CLOSED</button>
+        <button class="control-btn btn-stop" onclick="sendCommand('STOP')">⏹️ STOP</button>
+      </div>
+
+      <div class="custom-zone">
+        <div style="font-weight:600; margin-bottom:10px;">Custom Position</div>
+        <div class="slider-row">
+          <input id="customSlider" type="range" min="0" max="100" value="0" oninput="updateSlider()" />
+          <span class="slider-val" id="sliderValue">0%</span>
+        </div>
+        <button class="custom-apply" onclick="applyCustom()">Apply Custom Position</button>
+      </div>
+
+      <div class="status-box" id="statusBox">Status: CLOSED</div>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">Connection Settings</div>
+      <div class="form-group">
+        <label>Server / ESP32 IP</label>
+        <input id="serverIP" type="text" placeholder="192.168.1.150" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-save" onclick="saveConnection()">Save & Connect</button>
+        <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const rooms = ["Living Room", "Bedroom", "Kitchen", "Study"];
+    const curtainData = {
+      "Living Room": [
+        { name: "Living Room", position: 72, mode: "OPEN", moving: false },
+        { name: "Dining", position: 100, mode: "OPEN", moving: false }
+      ],
+      "Bedroom": [
+        { name: "Bedroom", position: 50, mode: "MORNING", moving: false }
+      ],
+      "Kitchen": [
+        { name: "Kitchen", position: 30, mode: "AFTERNOON", moving: false }
+      ],
+      "Study": [
+        { name: "Study", position: 12, mode: "EVENING", moving: false }
+      ]
+    };
+
+    let selectedRoom = "Living Room";
+    let serverIP = localStorage.getItem('smartCurtainIp') || '';
+    let connected = false;
+
+    function updateStatusBadge() {
+      const el = document.getElementById('connectionStatus');
+      if (connected) {
+        el.className = 'connection-status connected';
+        el.innerHTML = '<span class="status-dot"></span><span>Connected</span>';
+      } else {
+        el.className = 'connection-status disconnected';
+        el.innerHTML = '<span class="status-dot"></span><span>Disconnected</span>';
+      }
+    }
+
+    function renderRooms() {
+      const grid = document.getElementById('roomGrid');
+      grid.innerHTML = rooms.map(room => `
+        <button class="room-btn ${room === selectedRoom ? 'active' : ''}" onclick="selectRoom('${room}')">${room}</button>
+      `).join('');
+    }
+
+    function selectRoom(room) {
+      selectedRoom = room;
+      renderRooms();
+      updateStatusBox();
+    }
+
+    function updateSlider() {
+      document.getElementById('sliderValue').textContent = document.getElementById('customSlider').value + '%';
+    }
+
+    function sendCommand(cmd) {
+      curtainData[selectedRoom].forEach(item => {
+        if (cmd === 'OPEN') {
+          item.mode = 'OPEN';
+          item.position = 100;
+          item.moving = false;
+        } else if (cmd === 'CLOSED') {
+          item.mode = 'CLOSED';
+          item.position = 0;
+          item.moving = false;
+        } else if (cmd === 'MORNING') {
+          item.mode = 'MORNING';
+          item.position = 50;
+          item.moving = false;
+        } else if (cmd === 'AFTERNOON') {
+          item.mode = 'AFTERNOON';
+          item.position = 30;
+          item.moving = false;
+        } else if (cmd === 'EVENING') {
+          item.mode = 'EVENING';
+          item.position = 10;
+          item.moving = false;
+        } else if (cmd === 'STOP') {
+          item.moving = false;
+        }
+      });
+
+      updateStatusBox();
+    }
+
+    function applyCustom() {
+      const value = Number(document.getElementById('customSlider').value);
+      curtainData[selectedRoom].forEach(item => {
+        item.mode = 'CUSTOM';
+        item.position = value;
+        item.moving = false;
+      });
+
+      updateStatusBox();
+    }
+
+    function updateStatusBox() {
+      const first = curtainData[selectedRoom][0];
+      document.getElementById('statusBox').textContent = `Status: ${first.mode} (${first.position}%)`;
+    }
+
+    function openSettings() {
+      document.getElementById('serverIP').value = serverIP;
+      document.getElementById('settingsModal').classList.add('show');
+    }
+
+    function closeSettings() {
+      document.getElementById('settingsModal').classList.remove('show');
+    }
+
+    function saveConnection() {
+      const ip = document.getElementById('serverIP').value.trim();
+      if (!ip) {
+        alert('Please enter IP address');
+        return;
+      }
+
+      serverIP = ip;
+      localStorage.setItem('smartCurtainIp', serverIP);
+
+      connected = true;
+      updateStatusBadge();
+      closeSettings();
+      alert('Connected to: ' + serverIP);
+    }
+
+    renderRooms();
+    updateStatusBox();
+    updateStatusBadge();
+    updateSlider();
+  </script>
+</body>
+</html>
