@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Curtain Control</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 500px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+
+    h1 {
+      color: #667eea;
+      margin-bottom: 15px;
+      font-size: 2.2rem;
+    }
+
+    .subtitle {
+      color: #999;
+      margin-bottom: 35px;
+      font-size: 14px;
+    }
+
+    .nav-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 25px;
+    }
+
+    .nav-btn {
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      text-decoration: none;
+      display: block;
+      color: white;
+      font-size: 15px;
+      transition: all 0.3s;
+    }
+
+    .nav-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+
+    .btn-dashboard {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+
+    .btn-control {
+      background: linear-gradient(135deg, #f093fb, #f5576c);
+    }
+
+    .btn-status {
+      background: linear-gradient(135deg, #4facfe, #00f2fe);
+      color: #111;
+    }
+
+    .info-box {
+      background: #f0f0f0;
+      padding: 18px;
+      border-radius: 12px;
+      margin-top: 25px;
+      font-size: 13px;
+      color: #555;
+      line-height: 1.6;
+    }
+
+    .info-box strong {
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🪟 Smart Curtain</h1>
+    <p class="subtitle">Multi-Room Curtain Control System</p>
+
+    <div class="nav-buttons">
+      <a href="dashboard.html" class="nav-btn btn-dashboard">📊 Dashboard</a>
+      <a href="control.html" class="nav-btn btn-control">🎮 Control</a>
+      <a href="status.html" class="nav-btn btn-status">📋 Status</a>
+    </div>
+
+    <div class="info-box">
+      <strong>ℹ️ Getting Started</strong><br>
+      1. Buka Settings di halaman manapun<br>
+      2. Masukkan IP ESP32/Server<br>
+      3. Klik Save & Connect<br>
+      4. Nikmati kontrol curtain!
+    </div>
+  </div>
+</body>
+</html>
