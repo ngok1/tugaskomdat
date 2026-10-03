@@ -1,1 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Status Curtain</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      color: #222;
+    }
+    .navbar {
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .brand {
+      font-size: 20px;
+      font-weight: bold;
+      color: #667eea;
+    }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .status-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .status-chip.connected {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status-chip.disconnected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .connected .dot { background: #28a745; }
+    .disconnected .dot { background: #dc3545; }
 
+    .settings-btn {
+      border: none;
+      background: #667eea;
+      color: white;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 22px auto 40px;
+      padding: 0 20px;
+    }
+    .nav-tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .nav-tabs a {
+      text-decoration: none;
+      padding: 12px 18px;
+      color: #999;
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+    }
+    .nav-tabs a.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+    .preview-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 22px;
+      text-align: center;
+    }
+    .preview-name {
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+    .preview-mode {
+      display: inline-block;
+      padding: 6px 10px;
+      background: #f0f0f0;
+      border-radius: 18px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 12px;
+    }
+    .preview-icon {
+      font-size: 78px;
+      margin: 8px 0;
+    }
+    .preview-bar {
+      background: #efefef;
+      height: 12px;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .preview-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      transition: width 0.3s ease;
+    }
+    .preview-position {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .table-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 18px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid #e0e0e0;
+      font-size: 13px;
+    }
+    th {
+      background: #f5f5f5;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    .badge-on { background: #d4edda; color: #155724; }
+    .badge-off { background: #f8d7da; color: #721c24; }
+    .badge-move { background: #fff3cd; color: #856404; }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 20;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.show { display: flex; }
+    .modal-content {
+      background: white;
+      width: min(420px, 90%);
+      border-radius: 12px;
+      padding: 22px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 18px;
+    }
+    .field {
+      margin-bottom: 18px;
+    }
+    .field label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .field input {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .modal-actions button {
+      padding: 10px 12px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .save-btn { background: #667eea; color: white; }
+    .cancel-btn { background: #e0e0e0; color: #333; }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <div class="brand">🪟 Smart Curtain</div>
+    <div class="nav-right">
+      <div id="connectionState" class="status-chip disconnected">
+        <span class="dot"></span>
+        <span>Disconnected</span>
+      </div>
+      <button class="settings-btn" onclick="openSettings()">⚙️ Settings</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="nav-tabs">
+      <a href="dashboard.html">📊 Dashboard</a>
+      <a href="control.html">🎮 Control</a>
+      <a href="status.html" class="active">📋 Status</a>
+    </div>
+
+    <div id="previewGrid" class="status-grid"></div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Room</th>
+            <th>Mode</th>
+            <th>Position</th>
+            <th>Movement</th>
+            <th>Open</th>
+            <th>Closed</th>
+          </tr>
+        </thead>
+        <tbody id="statusTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">Connection Settings</div>
+      <div class="field">
+        <label>ESP32 / Server IP</label>
+        <input id="serverIp" type="text" placeholder="192.168.1.150" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-save save-btn" onclick="saveSettings()">Save & Connect</button>
+        <button class="btn-cancel cancel-btn" onclick="closeSettings()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "smartCurtainIp";
+    let serverIp = localStorage.getItem(STORAGE_KEY) || "";
+    let connected = false;
+
+    function setConnectionState(isConnected) {
+      connected = isConnected;
+      const el = document.getElementById("connectionState");
+      if (isConnected) {
+        el.className = "status-chip connected";
+        el.innerHTML = '<span class="dot"></span><span>Connected</span>';
+      } else {
+        el.className = "status-chip disconnected";
+        el.innerHTML = '<span class="dot"></span><span>Disconnected</span>';
+      }
+    }
+
+    function buildUrl(path) {
+      if (!serverIp) return null;
+      return "http://" + serverIp + path;
+    }
+
+    function openSettings() {
+      document.getElementById("serverIp").value = serverIp;
+      document.getElementById("settingsModal").classList.add("show");
+    }
+
+    function closeSettings() {
+      document.getElementById("settingsModal").classList.remove("show");
+    }
+
+    function saveSettings() {
+      const val = document.getElementById("serverIp").value.trim();
+      if (!val) {
+        alert("Masukkan IP ESP32 / server!");
+        return;
+      }
+      serverIp = val;
+      localStorage.setItem(STORAGE_KEY, serverIp);
+      closeSettings();
+      loadStatus();
+    }
+
+    function getIcon(position) {
+      if (position > 70) return "🟦";
+      if (position > 40) return "🟫";
+      return "🪟";
+    }
+
+    async function loadStatus() {
+      const url = buildUrl("/api/status");
+      if (!url) {
+        setConnectionState(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(url, { method: "GET" });
+        if (!res.ok) throw new Error("Bad response");
+        const data = await res.json();
+
+        const rooms = Array.isArray(data.rooms) ? data.rooms : [];
+        renderPreview(rooms);
+        renderTable(rooms);
+        setConnectionState(true);
+      } catch (err) {
+        setConnectionState(false);
+      }
+    }
+
+    function renderPreview(rooms) {
+      const grid = document.getElementById("previewGrid");
+      grid.innerHTML = rooms.map(room => `
+        <div class="preview-card">
+          <div class="preview-name">${room.name}</div>
+          <div class="preview-mode">${room.mode}</div>
+          <div class="preview-icon">${getIcon(room.position)}</div>
+          <div class="preview-bar">
+            <div class="preview-fill" style="width:${room.position}%"></div>
+          </div>
+          <div class="preview-position">${room.position}%</div>
+        </div>
+      `).join("");
+    }
+
+    function renderTable(rooms) {
+      const tbody = document.getElementById("statusTable");
+      tbody.innerHTML = rooms.map(room => `
+        <tr>
+          <td>${room.name}</td>
+          <td>${room.mode}</td>
+          <td>${room.position}%</td>
+          <td>
+            <span class="badge ${room.moving ? 'badge-move' : 'badge-off'}">
+              ${room.moving ? 'Moving' : 'Stopped'}
+            </span>
+          </td>
+          <td>
+            <span class="badge ${room.sensor_open ? 'badge-on' : 'badge-off'}">
+              ${room.sensor_open ? 'Triggered' : 'Off'}
+            </span>
+          </td>
+          <td>
+            <span class="badge ${room.sensor_closed ? 'badge-on' : 'badge-off'}">
+              ${room.sensor_closed ? 'Triggered' : 'Off'}
+            </span>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    setConnectionState(false);
+    if (serverIp) {
+      loadStatus();
+      setInterval(loadStatus, 2500);
+    } else {
+      openSettings();
+    }
+  </script>
+</body>
+</html>
