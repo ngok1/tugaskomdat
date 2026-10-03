@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Curtain Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      color: #222;
+    }
+
+    .navbar {
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .title {
+      font-size: 20px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .nav-right {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 20px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .connection-status.connected {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .connection-status.disconnected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .connected .status-dot { background: #28a745; }
+    .disconnected .status-dot { background: #dc3545; }
+
+    .settings-btn {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 14px;
+      background: #667eea;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 25px auto;
+      padding: 0 20px 40px;
+    }
+
+    .top-nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 25px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .top-nav a {
+      text-decoration: none;
+      padding: 12px 18px;
+      color: #999;
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .top-nav a.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 20px;
+    }
+
+    .card-title {
+      color: #666;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .card-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .time-box {
+      text-align: center;
+      padding: 25px 10px 10px;
+    }
+
+    .time-text {
+      font-size: 48px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 8px;
+    }
+
+    .date-text {
+      color: #888;
+      font-size: 14px;
+    }
+
+    .chart-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+
+    .chart-title {
+      font-weight: 600;
+      font-size: 15px;
+      margin-bottom: 16px;
+    }
+
+    .chart-bars {
+      display: flex;
+      gap: 14px;
+      align-items: flex-end;
+      height: 220px;
+      padding: 5px 0;
+    }
+
+    .chart-bar-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-bar {
+      width: 100%;
+      min-height: 16px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-radius: 8px 8px 0 0;
+      transition: height 0.3s ease;
+    }
+
+    .chart-label {
+      font-size: 11px;
+      color: #999;
+      text-align: center;
+    }
+
+    .curtain-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .curtain-item {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 18px;
+    }
+
+    .curtain-name {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .curtain-mode {
+      font-size: 12px;
+      color: #777;
+      margin-bottom: 12px;
+    }
+
+    .curtain-bar {
+      height: 8px;
+      border-radius: 6px;
+      background: #f0f0f0;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .curtain-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      transition: width 0.3s ease;
+    }
+
+    .curtain-pos {
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      width: 90%;
+      max-width: 420px;
+      border-radius: 12px;
+      padding: 22px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 18px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .modal-actions button {
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .btn-save {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-cancel {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    @media (max-width: 700px) {
+      .top-nav {
+        flex-wrap: wrap;
+      }
+
+      .chart-bars {
+        gap: 8px;
+      }
+
+      .curtain-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">
+    <div class="title">🪟 Smart Curtain</div>
+    <div class="nav-right">
+      <div id="connectionStatus" class="connection-status disconnected">
+        <span class="status-dot"></span>
+        <span>Disconnected</span>
+      </div>
+      <button class="settings-btn" onclick="openSettings()">⚙️ Settings</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="top-nav">
+      <a href="dashboard.html" class="active">📊 Dashboard</a>
+      <a href="control.html">🎮 Control</a>
+      <a href="status.html">📋 Status</a>
+    </div>
+
+    <div class="dashboard-grid">
+      <div class="card">
+        <div class="card-title">Current Time</div>
+        <div class="time-box">
+          <div class="time-text" id="timeText">00:00</div>
+          <div class="date-text" id="dateText">Loading...</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Total Curtains</div>
+        <div class="card-value" id="totalCurtains">0</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Moving</div>
+        <div class="card-value" id="movingCurtains">0</div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Curtain Positions</div>
+      <div class="chart-bars" id="chartBars"></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Room Status</div>
+      <div class="curtain-grid" id="curtainGrid"></div>
+    </div>
+  </div>
+
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">Connection Settings</div>
+      <div class="form-group">
+        <label>Server / ESP32 IP</label>
+        <input id="serverIP" type="text" placeholder="192.168.1.150 atau localhost:8080" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-save" onclick="saveConnection()">Save & Connect</button>
+        <button class="btn-cancel" onclick="closeSettings()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const curtainData = [
+      { name: 'Living Room', room: 'Living Room', position: 72, mode: 'OPEN', moving: false },
+      { name: 'Bedroom', room: 'Bedroom', position: 50, mode: 'MORNING', moving: false },
+      { name: 'Kitchen', room: 'Kitchen', position: 30, mode: 'AFTERNOON', moving: false },
+      { name: 'Dining', room: 'Living Room', position: 100, mode: 'OPEN', moving: false },
+      { name: 'Study', room: 'Study', position: 12, mode: 'EVENING', moving: false }
+    ];
+
+    let serverIP = localStorage.getItem('smartCurtainIp') || '';
+    let connected = false;
+
+    const connectionStatusEl = document.getElementById('connectionStatus');
+
+    function updateStatusBadge() {
+      if (connected) {
+        connectionStatusEl.className = 'connection-status connected';
+        connectionStatusEl.innerHTML = '<span class="status-dot"></span><span>Connected</span>';
+      } else {
+        connectionStatusEl.className = 'connection-status disconnected';
+        connectionStatusEl.innerHTML = '<span class="status-dot"></span><span>Disconnected</span>';
+      }
+    }
+
+    function updateClock() {
+      const now = new Date();
+      const hh = String(now.getHours()).padStart(2, '0');
+      const mm = String(now.getMinutes()).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const month = now.toLocaleString('en-US', { month: 'long' });
+      const year = now.getFullYear();
+
+      document.getElementById('timeText').textContent = `${hh}:${mm}`;
+      document.getElementById('dateText').textContent = `${dd} ${month} ${year}`;
+    }
+
+    function renderChart() {
+      const chart = document.getElementById('chartBars');
+      chart.innerHTML = curtainData.map(item => {
+        const height = Math.max(item.position, 8);
+        return `
+          <div class="chart-bar-box">
+            <div class="chart-bar" style="height: ${height * 1.8}px;"></div>
+            <div class="chart-label">${item.name}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderCurtainGrid() {
+      const grid = document.getElementById('curtainGrid');
+      grid.innerHTML = curtainData.map(item => `
+        <div class="curtain-item">
+          <div class="curtain-name">${item.name}</div>
+          <div class="curtain-mode">${item.mode}</div>
+          <div class="curtain-bar">
+            <div class="curtain-fill" style="width: ${item.position}%"></div>
+          </div>
+          <div class="curtain-pos">${item.position}%</div>
+        </div>
+      `).join('');
+    }
+
+    function renderStats() {
+      document.getElementById('totalCurtains').textContent = curtainData.length;
+      const moving = curtainData.filter(c => c.moving).length;
+      document.getElementById('movingCurtains').textContent = moving;
+    }
+
+    function openSettings() {
+      document.getElementById('serverIP').value = serverIP;
+      document.getElementById('settingsModal').classList.add('show');
+    }
+
+    function closeSettings() {
+      document.getElementById('settingsModal').classList.remove('show');
+    }
+
+    function saveConnection() {
+      const ip = document.getElementById('serverIP').value.trim();
+      if (!ip) {
+        alert('Please enter IP address');
+        return;
+      }
+
+      serverIP = ip;
+      localStorage.setItem('smartCurtainIp', serverIP);
+
+      connected = true;
+      updateStatusBadge();
+      closeSettings();
+
+      alert('Connected to: ' + serverIP);
+    }
+
+    function simulateMovement() {
+      curtainData.forEach(item => {
+        if (item.moving) {
+          if (item.position < item.target) item.position += 2;
+          else if (item.position > item.target) item.position -= 2;
+          else item.moving = false;
+        }
+      });
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    renderChart();
+    renderCurtainGrid();
+    renderStats();
+    updateStatusBadge();
+
+    setInterval(() => {
+      simulateMovement();
+      renderChart();
+      renderCurtainGrid();
+      renderStats();
+    }, 1000);
+  </script>
+</body>
+</html>
