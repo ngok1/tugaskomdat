@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>
+Smart Curtain Control
+</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+<style>
+
+body{
+
+font-family:Arial,sans-serif;
+
+background:#eef2f7;
+
+margin:0;
+
+padding:15px;
+
+}
+
+
+
+.header{
+
+background:white;
+
+padding:20px;
+
+border-radius:15px;
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+}
+
+
+
+.card{
+
+background:white;
+
+margin-top:15px;
+
+padding:20px;
+
+border-radius:15px;
+
+box-shadow:0 3px 10px #ddd;
+
+}
+
+
+
+input,
+select,
+button{
+
+width:100%;
+
+padding:12px;
+
+margin-top:10px;
+
+border-radius:10px;
+
+font-size:16px;
+
+border:1px solid #ccc;
+
+}
+
+
+
+button{
+
+background:#2563eb;
+
+color:white;
+
+border:none;
+
+cursor:pointer;
+
+}
+
+
+
+.red{
+
+background:#dc2626;
+
+}
+
+
+
+.green{
+
+background:#16a34a;
+
+}
+
+
+
+.grid{
+
+display:grid;
+
+grid-template-columns:
+repeat(auto-fit,minmax(120px,1fr));
+
+gap:10px;
+
+}
+
+
+
+.grid button{
+
+width:100%;
+
+}
+
+
+
+.position{
+
+text-align:center;
+
+font-size:50px;
+
+font-weight:bold;
+
+}
+
+
+
+.status{
+
+font-weight:bold;
+
+}
+
+
+
+.online{
+
+color:green;
+
+}
+
+
+
+.offline{
+
+color:red;
+
+}
+
+
+
+a{
+
+text-decoration:none;
+
+}
+
+</style>
+
+
+</head>
+
+
+<body>
+
+
+
+<div class="header">
+
+
+<div>
+
+<h1>
+🎛 Control Curtain
+</h1>
+
+
+<p>
+MQTT Remote Control
+</p>
+
+
+</div>
+
+
+<a href="/">
+Dashboard
+</a>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+MQTT Broker
+</h2>
+
+
+<input
+id="broker"
+placeholder="192.168.1.10">
+
+
+<button onclick="saveBroker()">
+
+CONNECT BROKER
+
+</button>
+
+
+
+<p>
+
+Status:
+
+<span id="mqtt">
+Checking...
+</span>
+
+</p>
+
+
+
+<p>
+
+ESP32:
+
+<span id="esp">
+-
+</span>
+
+</p>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Select Curtain
+</h2>
+
+
+
+<select id="device">
+
+
+<option value="curtain01">
+Living Room
+</option>
+
+
+<option value="curtain02">
+Bedroom
+</option>
+
+
+<option value="curtain03">
+Office
+</option>
+
+
+</select>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Position
+
+</h2>
+
+
+<div class="position">
+
+<span id="value">
+50
+</span>%
+
+</div>
+
+
+
+
+<input
+type="range"
+min="0"
+max="100"
+value="50"
+id="slider">
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Quick Control
+</h2>
+
+
+<div class="grid">
+
+
+<button onclick="setPosition(0)">
+CLOSE
+</button>
+
+
+<button onclick="setPosition(25)">
+25%
+</button>
+
+
+<button onclick="setPosition(50)">
+50%
+</button>
+
+
+<button onclick="setPosition(75)">
+75%
+</button>
+
+
+<button onclick="setPosition(100)">
+OPEN
+</button>
+
+
+<button class="red"
+onclick="stopMotor()">
+
+STOP
+
+</button>
+
+
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Operation Mode
+</h2>
+
+
+
+<select id="mode">
+
+
+<option value="manual">
+Manual
+</option>
+
+
+<option value="auto">
+Auto Sunlight
+</option>
+
+
+<option value="schedule">
+Schedule
+</option>
+
+
+<option value="sleep">
+Sleep Mode
+</option>
+
+
+
+</select>
+
+
+
+<button class="green"
+onclick="sendCommand()">
+
+SEND COMMAND
+
+</button>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Command Log
+</h2>
+
+
+<div id="log">
+
+Waiting...
+
+</div>
+
+
+</div>
+
+
+
+
+
+
+
+
+<div class="card">
+
+<a href="/">
+🏠 Dashboard
+</a>
+
+&nbsp;&nbsp;
+
+<a href="/status.html">
+📊 Status
+</a>
+
+</div>
+
+
+
+
+
+
+
+<script>
+
+
+let slider =
+document.getElementById(
+"slider"
+);
+
+
+
+let value =
+document.getElementById(
+"value"
+);
+
+
+
+slider.oninput=function(){
+
+value.innerHTML=this.value;
+
+}
+
+
+
+
+
+
+
+function setPosition(v)
+{
+
+slider.value=v;
+
+value.innerHTML=v;
+
+}
+
+
+
+
+
+
+
+function saveBroker()
+{
+
+
+let ip =
+document.getElementById(
+"broker"
+).value;
+
+
+
+fetch(
+"/api/config?broker="+ip
+)
+
+
+
+.then(
+r=>r.text()
+)
+
+
+
+.then(
+t=>{
+
+alert(t);
+
+}
+
+);
+
+
+}
+
+
+
+
+
+
+
+function sendCommand()
+{
+
+
+let device =
+document.getElementById(
+"device"
+).value;
+
+
+
+let position =
+slider.value;
+
+
+
+let mode =
+document.getElementById(
+"mode"
+).value;
+
+
+
+fetch(
+"/api/control?device="
++
+device
++
+"&position="
++
+position
++
+"&mode="
++
+mode
+)
+
+
+
+.then(
+r=>r.text()
+)
+
+
+
+.then(
+t=>{
+
+
+document.getElementById(
+"log"
+).innerHTML =
+
+"Device : "
++
+device
++
+"<br>"
++
+"Position : "
++
+position
++
+"%<br>"
++
+"Mode : "
++
+mode
++
+"<br>"
++
+t;
+
+
+
+});
+
+
+
+}
+
+
+
+
+
+
+
+function stopMotor()
+{
+
+
+document.getElementById(
+"log"
+).innerHTML =
+"Motor Stop Command";
+
+
+
+}
+
+
+
+
+
+
+
+
+async function update()
+{
+
+
+try{
+
+
+let r =
+await fetch(
+"/api/status"
+);
+
+
+
+let d =
+await r.json();
+
+
+
+document.getElementById(
+"mqtt"
+).innerHTML =
+d.mqtt;
+
+
+
+document.getElementById(
+"esp"
+).innerHTML =
+d.ip;
+
+
+
+document.getElementById(
+"broker"
+).value =
+d.broker;
+
+
+
+}
+
+catch(e)
+{
+
+document.getElementById(
+"mqtt"
+).innerHTML =
+"Offline";
+
+}
+
+
+
+}
+
+
+
+setInterval(
+update,
+3000
+);
+
+
+update();
+
+
+
+</script>
+
+
+</body>
+
+</html>
