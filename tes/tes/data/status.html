@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>
+Smart Curtain Status
+</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+<style>
+
+body{
+
+font-family:Arial,sans-serif;
+
+background:#eef2f7;
+
+margin:0;
+
+padding:15px;
+
+}
+
+
+
+.header{
+
+background:white;
+
+padding:20px;
+
+border-radius:15px;
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+}
+
+
+
+.card{
+
+background:white;
+
+margin-top:15px;
+
+padding:20px;
+
+border-radius:15px;
+
+box-shadow:0 3px 10px #ddd;
+
+}
+
+
+
+input,
+select,
+button{
+
+width:100%;
+
+padding:12px;
+
+margin-top:10px;
+
+border-radius:10px;
+
+font-size:15px;
+
+}
+
+
+
+button{
+
+background:#2563eb;
+
+color:white;
+
+border:none;
+
+}
+
+
+
+.window{
+
+height:280px;
+
+border:6px solid #334155;
+
+background:#bde7ff;
+
+display:flex;
+
+overflow:hidden;
+
+border-radius:15px;
+
+}
+
+
+
+.glass{
+
+flex:1;
+
+background:
+linear-gradient(
+135deg,
+#dff6ff,
+#a5ddff
+);
+
+}
+
+
+
+.curtain{
+
+background:
+linear-gradient(
+90deg,
+#475569,
+#94a3b8,
+#475569
+);
+
+transition:1s;
+
+}
+
+
+
+.big{
+
+font-size:40px;
+
+font-weight:bold;
+
+text-align:center;
+
+}
+
+
+
+.status{
+
+font-size:18px;
+
+}
+
+
+
+.online{
+
+color:green;
+
+font-weight:bold;
+
+}
+
+
+
+.offline{
+
+color:red;
+
+font-weight:bold;
+
+}
+
+
+
+a{
+
+text-decoration:none;
+
+}
+
+
+
+</style>
+
+</head>
+
+
+<body>
+
+
+
+
+<div class="header">
+
+
+<div>
+
+<h1>
+📊 Curtain Status
+</h1>
+
+
+<p>
+Realtime Monitor
+</p>
+
+
+</div>
+
+
+
+<a href="/">
+Dashboard
+</a>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+MQTT Broker
+</h2>
+
+
+<input
+id="broker"
+placeholder="192.168.1.10">
+
+
+
+<button onclick="saveBroker()">
+
+CONNECT BROKER
+
+</button>
+
+
+<p>
+
+MQTT:
+
+<span id="mqtt">
+-
+</span>
+
+</p>
+
+
+<p>
+
+ESP32:
+
+<span id="ip">
+-
+</span>
+
+</p>
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Select Device
+</h2>
+
+
+
+<select id="device">
+
+
+<option value="curtain01">
+Living Room
+</option>
+
+
+<option value="curtain02">
+Bedroom
+</option>
+
+
+<option value="curtain03">
+Office
+</option>
+
+
+</select>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Curtain Simulation
+</h2>
+
+
+
+<div class="window">
+
+
+<div id="left"
+class="curtain"
+style="width:25%">
+</div>
+
+
+<div class="glass">
+
+</div>
+
+
+<div id="right"
+class="curtain"
+style="width:25%">
+</div>
+
+
+</div>
+
+
+
+
+<div class="big">
+
+<span id="position">
+50
+</span>%
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+Motor Status
+</h2>
+
+
+
+<p class="status">
+
+Motor :
+
+<span id="motor">
+STOPPED
+</span>
+
+
+</p>
+
+
+
+<p class="status">
+
+Direction :
+
+<span id="direction">
+-
+</span>
+
+
+</p>
+
+
+
+<p class="status">
+
+Mode :
+
+<span id="mode">
+-
+</span>
+
+
+</p>
+
+
+
+<p class="status">
+
+State :
+
+<span id="state">
+-
+</span>
+
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<h2>
+ESP32 Information
+</h2>
+
+
+
+<p>
+
+WiFi:
+
+<span class="online">
+Connected
+</span>
+
+</p>
+
+
+<p>
+
+MQTT:
+
+<span id="mqtt2">
+-
+</span>
+
+</p>
+
+
+<p>
+
+Broker:
+
+<span id="brokerView">
+-
+</span>
+
+</p>
+
+
+<p>
+
+Uptime:
+
+<span id="uptime">
+-
+</span>
+
+</p>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<div class="card">
+
+
+<a href="/">
+🏠 Dashboard
+</a>
+
+&nbsp;&nbsp;
+
+<a href="/control.html">
+🎛 Control
+</a>
+
+
+</div>
+
+
+
+
+
+
+
+
+<script>
+
+
+let lastPosition=0;
+
+
+
+
+
+
+
+function saveBroker()
+{
+
+
+let ip =
+document.getElementById(
+"broker"
+).value;
+
+
+
+fetch(
+"/api/config?broker="+ip
+)
+
+
+
+.then(
+r=>r.text()
+)
+
+
+
+.then(
+t=>alert(t)
+);
+
+
+
+}
+
+
+
+
+
+
+
+
+function animateCurtain(pos)
+{
+
+
+document.getElementById(
+"position"
+).innerHTML =
+pos;
+
+
+
+
+let cover =
+50 -
+(pos/2);
+
+
+
+document.getElementById(
+"left"
+).style.width =
+cover+"%";
+
+
+
+document.getElementById(
+"right"
+).style.width =
+cover+"%";
+
+
+
+
+
+
+if(pos>lastPosition)
+{
+
+
+document.getElementById(
+"motor"
+).innerHTML =
+"OPENING";
+
+
+document.getElementById(
+"direction"
+).innerHTML =
+"UP";
+
+
+}
+
+else if(pos<lastPosition)
+{
+
+
+document.getElementById(
+"motor"
+).innerHTML =
+"CLOSING";
+
+
+document.getElementById(
+"direction"
+).innerHTML =
+"DOWN";
+
+
+}
+
+else
+{
+
+
+document.getElementById(
+"motor"
+).innerHTML =
+"STOPPED";
+
+
+}
+
+
+lastPosition=pos;
+
+
+
+}
+
+
+
+
+
+
+
+
+
+async function update()
+{
+
+
+try{
+
+
+let r =
+await fetch(
+"/api/status"
+);
+
+
+
+let data =
+await r.json();
+
+
+
+
+
+document.getElementById(
+"mqtt"
+).innerHTML =
+data.mqtt;
+
+
+
+document.getElementById(
+"mqtt2"
+).innerHTML =
+data.mqtt;
+
+
+
+document.getElementById(
+"ip"
+).innerHTML =
+data.ip;
+
+
+
+document.getElementById(
+"brokerView"
+).innerHTML =
+data.broker;
+
+
+
+document.getElementById(
+"broker"
+).value =
+data.broker;
+
+
+
+document.getElementById(
+"uptime"
+).innerHTML =
+data.uptime;
+
+
+
+
+
+let selected =
+document.getElementById(
+"device"
+).value;
+
+
+
+
+
+data.curtain.forEach(
+c=>{
+
+
+if(c.id==selected)
+{
+
+
+animateCurtain(
+c.position
+);
+
+
+
+document.getElementById(
+"mode"
+).innerHTML =
+c.mode;
+
+
+
+document.getElementById(
+"state"
+).innerHTML =
+c.state;
+
+
+
+}
+
+
+
+});
+
+
+
+}
+
+catch(e)
+{
+
+document.getElementById(
+"mqtt"
+).innerHTML =
+"Offline";
+
+
+}
+
+
+
+}
+
+
+
+
+
+setInterval(
+update,
+3000
+);
+
+
+update();
+
+
+
+</script>
+
+
+</body>
+
+</html>
